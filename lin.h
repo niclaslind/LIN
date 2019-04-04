@@ -25,19 +25,21 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //typedef unsigned char uint8_t;
 //typedef unsigned int uint16_t;
+// #include "Arduino.h"
+// #define soft
+
 #include <inttypes.h>
 #include "Arduino.h"
+#ifdef soft
+#include <SoftwareSerial.h>
+#define LIN_SERIAL            SoftwareSerial
+#else
 #include <HardwareSerial.h>
-
 #define LIN_SERIAL            HardwareSerial
+#endif
+
 #define LIN_BREAK_DURATION    15    // Number of bits in the break.
 #define LIN_TIMEOUT_IN_FRAMES 2     // Wait this many max frame times before declaring a read timeout.
-
-#include "heapskew.h"
-
-// This code allows you to derive from the LINFrame class to define messages of different lengths and therefore save a few bytes of RAM.  But it relies on the compiler laying out the class memory in RAM so that the derived class data directly follows the base class.
-// If this is not the case in your system, the easiest way to get something working is to only allow full frames, as shown in the #else clause.
-// Also, you can over-malloc the LINFrame class to create an extended data buffer.  Of course this method has its own memory management overhead.
 
 enum
   {
@@ -47,62 +49,19 @@ enum
     LinReadFrame   = 2,
   };
 
-#if 1
-class LinScheduleEntry
-{
-public:
-  LinScheduleEntry();
-  unsigned long int trigger;  // When to execute (if it is scheduled)
-  HeapSkew<LinScheduleEntry>::SkewHeapElem skewChildren;
-  uint16_t (*callback)(LinScheduleEntry* me);  // Called after this frame is processed.  Return 1 or greater to reschedule the frame that many milliseconds from now, 0 to drop it.  if callback is NULL, frame is considered a one-shot.
-  uint8_t   flags;  
-  uint8_t   addr;
-  uint8_t   len;
-  uint8_t   data[1];
-  // The data bytes must follow the len field in RAM
-
-  // So that the skew heap orders the elements by when they should be executed
-  int operator > (LinScheduleEntry& ee)
-  {
-    return trigger > ee.trigger;
-  }
-
-};
-
-class LinSeFullFrame:public LinScheduleEntry
-{
-public:
-  uint8_t  dontUse[7];  // Code will actually write this by overwriting the "data" buffer in the base class.
-};
-
-#else
-
-class LinScheduleEntry
-{
-public:
-  LinScheduleEntry();
-  HeapSkew<EnsembleElem>::SkewHeapElem skewChildren;
-  uint8_t   addr;
-  uint8_t   len;
-  uint8_t   data[8];
-};
-
-#define LinSeFullFrame LinScheduleEntry
-#endif
-
-
 class Lin
 {
 protected:
-  void serialBreak(void);
-  // For Lin 1.X "start" should = 0, for Lin 2.X "start" should be the addr byte. 
-  static uint8_t dataChecksum(const uint8_t* message, char nBytes,uint16_t start=0);
-  static uint8_t addrParity(uint8_t addr);
-
-  HeapSkew<LinScheduleEntry> scheduler;
+  // void serialBreak(void);
+  // For Lin 1.X "start" should = 0, for Lin 2.X "start" should be the addr byte.
 
 public:
-  Lin(LIN_SERIAL& ser=Serial,uint8_t txPin=1);
+  static boolean validateChecksum(unsigned char data[], byte data_size);
+  static uint8_t dataChecksum(const uint8_t* message, char nBytes,uint16_t start=0);
+  static uint8_t addrParity(uint8_t addr);
+  static int calulateChecksum(unsigned char data[], byte data_size);
+  void serialBreak(void);
+  Lin(LIN_SERIAL& ser,uint8_t txPin=1);
   LIN_SERIAL& serial;
   uint8_t txPin;               //  what pin # is used to transmit (needed to generate the BREAK signal)
   int     serialSpd;           //  in bits/sec. Also called baud rate
@@ -111,16 +70,11 @@ public:
   void begin(int speed);
 
   // Send a message right now, ignoring the schedule table.
-  void send(uint8_t addr, const uint8_t* message,uint8_t nBytes,uint8_t proto=2);
-
+  //void send(uint8_t addr, const uint8_t* message,uint8_t nBytes,uint8_t proto=2);
+  void send(uint8_t addr, const uint8_t* message,uint8_t nBytes);
+  //void send(uint8_t nBytes);
+  int readStream(byte data[], byte data_size); // read data from LIN bus
   // Receive a message right now, returns 0xff if good checksum, # bytes received (including checksum) if checksum is bad.
   uint8_t recv(uint8_t addr, uint8_t* message, uint8_t nBytes,uint8_t proto=2);
-
-  // Scheduler APIs
-
-  // Add an element to the schedule.  To remove, either clear the whole thing, or remove it when it next plays
-  void add(LinScheduleEntry& entry,uint16_t when=0) { entry.trigger = millis() + when; scheduler.push(entry); }
-  void clear(void) { scheduler.clear(); }
-  void loop();
 
 };

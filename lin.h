@@ -23,21 +23,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
-//typedef unsigned char uint8_t;
-//typedef unsigned int uint16_t;
-// #include "Arduino.h"
-// #define soft
-
 #include <inttypes.h>
 #include "Arduino.h"
-#ifdef soft
-#include <SoftwareSerial.h>
-#define LIN_SERIAL            SoftwareSerial
-#else
 #include <HardwareSerial.h>
-#define LIN_SERIAL            HardwareSerial
-#endif
 
+#define LIN_SERIAL            HardwareSerial
 #define LIN_BREAK_DURATION    15    // Number of bits in the break.
 #define LIN_TIMEOUT_IN_FRAMES 2     // Wait this many max frame times before declaring a read timeout.
 
@@ -51,10 +41,6 @@ enum
 
 class Lin
 {
-protected:
-  // void serialBreak(void);
-  // For Lin 1.X "start" should = 0, for Lin 2.X "start" should be the addr byte.
-
 public:
   static boolean validateChecksum(unsigned char data[], byte data_size);
   static uint8_t dataChecksum(const uint8_t* message, char nBytes,uint16_t start=0);
@@ -70,11 +56,9 @@ public:
   void begin(int speed);
 
   // Send a message right now, ignoring the schedule table.
-  //void send(uint8_t addr, const uint8_t* message,uint8_t nBytes,uint8_t proto=2);
   void send(uint8_t addr, const uint8_t* message,uint8_t nBytes);
-  //void send(uint8_t nBytes);
   int readStream(byte data[], byte data_size); // read data from LIN bus
+  
   // Receive a message right now, returns 0xff if good checksum, # bytes received (including checksum) if checksum is bad.
   uint8_t recv(uint8_t addr, uint8_t* message, uint8_t nBytes,uint8_t proto=2);
-
 };

@@ -46,6 +46,8 @@ void Lin::serialBreak(void)
   if (serialOn)
   {
     serial.flush();
+    serial.end();
+    gpio_reset_pin((gpio_num_t)txPin);
     gpio_matrix_out(txPin, SIG_GPIO_OUT_IDX, false, false);
   }
 

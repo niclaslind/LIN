@@ -47,10 +47,9 @@ public:
     HardwareSerial &serial() const { return m_Serial; }
 
     static uint8_t addrParity(uint8_t addr) {
-        uint8_t p0 = BIT_SHIFT(addr, 0u) ^BIT_SHIFT(addr, 1u)
-                     ^BIT_SHIFT(addr, 2u) ^BIT_SHIFT(addr, 4u);
-        uint8_t p1 = ~(BIT_SHIFT(addr, 1u) ^ BIT_SHIFT(addr, 3u)
-                       ^ BIT_SHIFT(addr, 4u) ^ BIT_SHIFT(addr, 5u));
+        uint8_t p0 = BIT_SHIFT(addr, 0u) ^BIT_SHIFT(addr, 1u) ^BIT_SHIFT(addr, 2u) ^BIT_SHIFT(addr, 4u);
+        uint8_t p1 = ~(BIT_SHIFT(addr, 1u) ^ BIT_SHIFT(addr, 3u) ^ BIT_SHIFT(addr, 4u) ^ BIT_SHIFT(addr, 5u));
+
         return (p0 | (p1 << 1u)) << 6u;
     };
 

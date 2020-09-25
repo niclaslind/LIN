@@ -28,49 +28,48 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <array>
 
 void Lin::begin() {
-  m_Serial.begin(serialSpd);
+    m_Serial.begin(serialSpd);
 }
 
-
 void Lin::serialBreak() {
-  constexpr auto LIN_BREAK_DURATION = 15;
+    constexpr auto LIN_BREAK_DURATION = 15;
 
-  m_Serial.flush();
-  delay(1);
-  m_Serial.end();
-  gpio_reset_pin(GPIO_NUM_4);
-  gpio_matrix_out(m_TxPin, SIG_GPIO_OUT_IDX, false, false);
+    m_Serial.flush();
+    delay(1);
+    m_Serial.end();
+    gpio_reset_pin(GPIO_NUM_4);
+    gpio_matrix_out(m_TxPin, SIG_GPIO_OUT_IDX, false, false);
 
 //  pinMode(m_TxPin, OUTPUT);
-  digitalWrite(m_TxPin, LOW); // Send BREAK
+    digitalWrite(m_TxPin, LOW); // Send BREAK
 
-  constexpr auto brakeEnd = (1000000UL / static_cast<unsigned long>(serialSpd));
-  constexpr auto brakeBegin = brakeEnd * LIN_BREAK_DURATION;
+    constexpr auto brakeEnd = (1000000UL / static_cast<unsigned long>(serialSpd));
+    constexpr auto brakeBegin = brakeEnd * LIN_BREAK_DURATION;
 
-  // delayMicroseconds unreliable above 16383 see Arduino man pages
-  delayMicroseconds(brakeBegin);
+    // delayMicroseconds unreliable above 16383 see Arduino man pages
+    delayMicroseconds(brakeBegin);
 
-  digitalWrite(m_TxPin, HIGH); // BREAK delimiter
+    digitalWrite(m_TxPin, HIGH); // BREAK delimiter
 
-  m_Serial.begin(serialSpd);
+    m_Serial.begin(serialSpd);
 }
 
 
 int Lin::calculateChecksum(const unsigned char data[], uint8_t data_size) {
-  int sum = 0;
+    int sum = 0;
 
-  for (int i = 0; i < data_size; i++) {
-    sum = sum + data[i];
-  }
+    for (int i = 0; i < data_size; i++) {
+        sum = sum + data[i];
+    }
 
-  const auto v_checksum = static_cast<uint8_t>(~(sum % 0xffu));
-  return v_checksum;
+    const auto v_checksum = static_cast<uint8_t>(~(sum % 0xffu));
+    return v_checksum;
 }
 
 // according to enhanced crc
 bool Lin::validateChecksum(const unsigned char data[], uint8_t data_size) {
-  uint8_t checksum = data[data_size - 1];
-  uint8_t v_checksum = calculateChecksum(data, data_size - 1);
+    uint8_t checksum = data[data_size - 1];
+    uint8_t v_checksum = calculateChecksum(data, data_size - 1);
 
-  return checksum == v_checksum;
+    return checksum == v_checksum;
 }
